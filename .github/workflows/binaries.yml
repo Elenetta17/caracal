@@ -70,13 +70,13 @@ jobs:
       - uses: actions/download-artifact@v4.1.7
         with:
           name: ${{ needs.linux.outputs.artifact_name }}
-          path: artifact/linux
+          path: artifact
       - uses: actions/download-artifact@v4.1.7
         with:
           name: ${{ needs.macos.outputs.artifact_name }}
-          path: artifact/macos
-      - run: ls -l artifact  # debug to check artifacts
+          path: artifact
+      - run: ls -l artifact  # to verify all files are together
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: artifact/**
+          files: artifact/*
