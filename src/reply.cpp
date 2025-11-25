@@ -51,9 +51,26 @@ std::string Reply::csv_header() {
 }
 
 uint16_t Reply::checksum(uint32_t caracal_id) const {
-  // TODO: IPv6 support? Or just encode the last 32 bits for IPv6?
-  return Checksum::caracal_checksum(caracal_id, probe_dst_addr.s6_addr32[3],
-                                    probe_src_port, probe_ttl);
+  uint32_t sum_addr = 0;
+
+  if (probe_protocol == IPPROTO_ICMP) {
+    // IPv4: use the last 32 bits of the destination address
+    sum_addr = probe_dst_addr.s6_addr32[3];
+
+  } else if (probe_protocol == IPPROTO_ICMPV6) {
+    // IPv6: TODO: investigate a better checksum
+    sum_addr = probe_dst_addr.s6_addr32[0] +
+               probe_dst_addr.s6_addr32[1] +
+               probe_dst_addr.s6_addr32[2] +
+               probe_dst_addr.s6_addr32[3];
+
+  } else {
+    // Fallback: behave like IPv4 ICMP
+    sum_addr = probe_dst_addr.s6_addr32[3];
+  }
+
+  return Checksum::caracal_checksum(
+      caracal_id, sum_addr, probe_src_port, probe_ttl);
 }
 
 bool Reply::is_valid(uint32_t caracal_id) const {
@@ -61,8 +78,11 @@ bool Reply::is_valid(uint32_t caracal_id) const {
   // unreachable messages. We cannot validate echo replies as they do not
   // contain the probe_id field contained in the source IP header.
   // TODO: IPv6 support?
-  if (reply_protocol == IPPROTO_ICMP &&
-      (reply_icmp_type == 3 || reply_icmp_type == 11)) {
+  bool icmp_can_validate_probe =
+    (reply_protocol == IPPROTO_ICMP  && (reply_icmp_type == 3 || reply_icmp_type == 11)) ||
+    (reply_protocol == IPPROTO_ICMPV6 && (reply_icmp_type == 1 || reply_icmp_type == 3));
+
+  if (icmp_can_validate_probe) {
     return probe_id == checksum(caracal_id);
   }
   return true;
