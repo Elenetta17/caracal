@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(caracal VERSION 0.15.4)
+project(caracal VERSION 0.15.5)
 
 # We have Find* modules in the cmake/ directory, for the libraries not available with Conan
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/)
