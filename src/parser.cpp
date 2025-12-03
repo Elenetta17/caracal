@@ -47,7 +47,6 @@ void parse_outer(Reply& reply, const Tins::IP* ip) noexcept {
 void parse_outer(Reply& reply, const Tins::IPv6* ip) noexcept {
   copy(ip->src_addr(), reply.reply_src_addr);
   copy(ip->dst_addr(), reply.reply_dst_addr);
-  reply.probe_id = 0;  // Not implemented for IPv6.
   reply.reply_size = ip->payload_length();
   reply.reply_ttl = static_cast<uint8_t>(ip->hop_limit());
 }
@@ -92,7 +91,6 @@ void parse_inner(Reply& reply, const Tins::IP* ip) noexcept {
 
 void parse_inner(Reply& reply, const Tins::IPv6* ip) noexcept {
   copy(ip->dst_addr(), reply.probe_dst_addr);
-  reply.probe_id = 0;  // Not implemented for IPv6.
   reply.probe_size = ip->payload_length();
   reply.quoted_ttl = ip->hop_limit();
   reply.probe_flow_label = ip->flow_label();
@@ -112,6 +110,7 @@ void parse_inner(Reply& reply, const Tins::ICMPv6* icmp,
   reply.probe_protocol = IPPROTO_ICMPV6;
   reply.probe_src_port = icmp->identifier();
   reply.probe_dst_port = 0;  // Not encoded in ICMP probes.
+  reply.probe_id = icmp->identifier();
   reply.rtt = Timestamp::difference(
       duration_cast<Timestamp::tenth_ms>(timestamp).count(), icmp->sequence());
 }

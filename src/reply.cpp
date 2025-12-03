@@ -58,10 +58,10 @@ uint16_t Reply::checksum(uint32_t caracal_id) const {
     sum_addr = probe_dst_addr.s6_addr32[3];
 
   } else if (probe_protocol == IPPROTO_ICMPV6) {
-    // IPv6: TODO: investigate a better checksum
-    sum_addr = probe_dst_addr.s6_addr32[0] +
-               probe_dst_addr.s6_addr32[1] +
-               probe_dst_addr.s6_addr32[2] +
+    // IPv6: use XOR to combine address components without overflow
+    sum_addr = probe_dst_addr.s6_addr32[0] ^
+               probe_dst_addr.s6_addr32[1] ^
+               probe_dst_addr.s6_addr32[2] ^
                probe_dst_addr.s6_addr32[3];
 
   } else {
@@ -74,10 +74,9 @@ uint16_t Reply::checksum(uint32_t caracal_id) const {
 }
 
 bool Reply::is_valid(uint32_t caracal_id) const {
-  // Currently, we only validate IPv4 ICMP time exceeded and destination
+  // Currently, we only validate IPv4 and IPv6: ICMP time exceeded and destination
   // unreachable messages. We cannot validate echo replies as they do not
   // contain the probe_id field contained in the source IP header.
-  // TODO: IPv6 support?
   bool icmp_can_validate_probe =
     (reply_protocol == IPPROTO_ICMP  && (reply_icmp_type == 3 || reply_icmp_type == 11)) ||
     (reply_protocol == IPPROTO_ICMPV6 && (reply_icmp_type == 1 || reply_icmp_type == 3));
