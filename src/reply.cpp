@@ -74,15 +74,27 @@ uint16_t Reply::checksum(uint32_t caracal_id) const {
 }
 
 bool Reply::is_valid(uint32_t caracal_id) const {
-  // Currently, we only validate IPv4 and IPv6: ICMP time exceeded and destination
-  // unreachable messages. We cannot validate echo replies as they do not
-  // contain the probe_id field contained in the source IP header.
   bool icmp_can_validate_probe =
     (reply_protocol == IPPROTO_ICMP  && (reply_icmp_type == 3 || reply_icmp_type == 11)) ||
     (reply_protocol == IPPROTO_ICMPV6 && (reply_icmp_type == 1 || reply_icmp_type == 3));
-
+  
   if (icmp_can_validate_probe) {
-    return probe_id == checksum(caracal_id);
+    uint16_t expected = checksum(caracal_id);
+    bool valid = (probe_id == expected);
+    
+    // DEBUG: Always print for now
+    std::cerr << "Protocol=" << +reply_protocol 
+              << " ICMP_type=" << +reply_icmp_type
+              << " probe_id=" << probe_id 
+              << " expected=" << expected
+              << " caracal_id=" << caracal_id
+              << " probe_protocol=" << +probe_protocol
+              << " probe_src_port=" << probe_src_port
+              << " probe_ttl=" << +probe_ttl
+              << " valid=" << valid
+              << std::endl;
+    
+    return valid;
   }
   return true;
 }
