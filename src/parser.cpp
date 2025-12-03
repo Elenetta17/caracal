@@ -113,8 +113,8 @@ void parse_inner(Reply& reply, const Tins::ICMPv6* icmp,
   reply.probe_id = icmp->identifier();
   
   // DEBUG
-  std::cerr << "ICMPv6 parse_inner: identifier=" << icmp->identifier() 
-            << " sequence=" << icmp->sequence() << std::endl;
+  fprintf(stderr, "ICMPv6 parse_inner: identifier=%u sequence=%u\n", 
+          icmp->identifier(), icmp->sequence());
   
   reply.rtt = Timestamp::difference(
       duration_cast<Timestamp::tenth_ms>(timestamp).count(), icmp->sequence());

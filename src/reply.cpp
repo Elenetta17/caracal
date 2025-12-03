@@ -82,17 +82,9 @@ bool Reply::is_valid(uint32_t caracal_id) const {
     uint16_t expected = checksum(caracal_id);
     bool valid = (probe_id == expected);
     
-    // DEBUG: Always print for now
-    std::cerr << "Protocol=" << +reply_protocol 
-              << " ICMP_type=" << +reply_icmp_type
-              << " probe_id=" << probe_id 
-              << " expected=" << expected
-              << " caracal_id=" << caracal_id
-              << " probe_protocol=" << +probe_protocol
-              << " probe_src_port=" << probe_src_port
-              << " probe_ttl=" << +probe_ttl
-              << " valid=" << valid
-              << std::endl;
+    // DEBUG
+    fprintf(stderr, "Protocol=%u ICMP_type=%u probe_id=%u expected=%u caracal_id=%u valid=%d\n",
+            reply_protocol, reply_icmp_type, probe_id, expected, caracal_id, valid);
     
     return valid;
   }
