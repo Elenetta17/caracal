@@ -4,7 +4,9 @@ on: [ push ]
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    outputs:
+      artifact_name: ${{ steps.set-output-linux.outputs.artifact_name }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Conan Client
@@ -15,20 +17,26 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install --yes build-essential cmake ninja-build
       - name: Install Conan dependencies
-        run: conan install . --build=missing -s compiler=gcc -s compiler.version=10 -s compiler.cppstd=20 -s build_type=Release
+        run: conan install . --build=missing -s compiler=gcc -s compiler.version=10 -s compiler.cppstd=20 -s build_type=Release --output-folder=build
       - name: Configure project
-        run: cmake -S . -B build -G Ninja -DWITH_BINARY=ON -DWITH_CONAN=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
+        run: cmake -S . -B build -G Ninja -DWITH_BINARY=ON -DWITH_CONAN=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
       - name: Build executable
         run: |
           cmake --build build --target caracal-bin
           mv build/caracal build/caracal-linux-amd64
       - uses: actions/upload-artifact@v4.6.2
+        id: upload-artifact
         with:
           name: caracal-linux-amd64-${{ runner.os }}
           path: build/caracal-linux-amd64
+      - name: Set artifact name output
+        id: set-output-linux
+        run: echo "artifact_name=caracal-linux-amd64-${{ runner.os }}" >> $GITHUB_OUTPUT
 
   macos:
     runs-on: macos-latest
+    outputs:
+      artifact_name: ${{ steps.set-output-macos.outputs.artifact_name }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Conan Client
@@ -39,23 +47,37 @@ jobs:
       - name: Install dependencies
         run: brew install cmake ninja
       - name: Install Conan dependencies
-        run: conan install . --build=missing -s compiler=apple-clang -s compiler.version=17 -s compiler.cppstd=20 -s build_type=Release
+        run: conan install . --build=missing -s compiler=apple-clang -s compiler.version=17 -s compiler.cppstd=20 -s build_type=Release --output-folder=build
       - name: Configure project
-        run: cmake -S . -B build -G Ninja -DWITH_BINARY=ON -DWITH_CONAN=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
+        run: cmake -S . -B build -G Ninja -DWITH_BINARY=ON -DWITH_CONAN=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
       - name: Build executable
         run: |
           cmake --build build --target caracal-bin
           mv build/caracal build/caracal-macos-amd64
       - uses: actions/upload-artifact@v4.6.2
+        id: upload-artifact
         with:
           name: caracal-macos-amd64-${{ runner.os }}
           path: build/caracal-macos-amd64
+      - name: Set artifact name output
+        id: set-output-macos
+        run: echo "artifact_name=caracal-macos-amd64-${{ runner.os }}" >> $GITHUB_OUTPUT
 
   release:
     needs: [ linux, macos ]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4.1.7
+        with:
+          name: ${{ needs.linux.outputs.artifact_name }}
+          path: artifact
+      - uses: actions/download-artifact@v4.1.7
+        with:
+          name: ${{ needs.macos.outputs.artifact_name }}
+          path: artifact
+      - run: ls -l artifact  # to verify all files are together
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
